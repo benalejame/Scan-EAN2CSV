@@ -1,143 +1,4 @@
-﻿<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0a4e8a">
-    <title>Escáner EAN Profesional</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 12px; }
-        
-        .panel { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 12px; border: 1px solid #e2e8f0; }
-        
-        button { display: block; width: 100%; padding: 14px; margin: 8px 0; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; transition: all 0.2s ease; }
-        button:active { transform: scale(0.98); opacity: 0.95; }
-        
-        .btn-scan { background-color: #10b981; margin-top: 0; } 
-        .btn-torch { background-color: #eab308; color: #1e293b; display: none; }
-        .btn-csv { background-color: #0a4e8a; }  
-        .btn-clear { background-color: #ef4444; margin-bottom: 0; } 
-        
-        #camera-placeholder { 
-            width: 100%; 
-            max-width: 500px; 
-            height: 200px; 
-            background: #0f172a; 
-            display: none; 
-            margin: 0 auto 10px auto; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.6); 
-            border: 2px solid #cbd5e1; 
-            position: relative;
-            transition: border-color 0.2s ease;
-        }
-        
-        #camera-placeholder video { 
-            object-fit: cover !important; 
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        #camera-placeholder > div {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            height: 100% !important;
-        }
-
-        #qr-shaded-region {
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            margin: 0 !important;
-            width: 94% !important; 
-            height: 90px !important; 
-        }
-
-        #qr-shaded-region > div {
-            width: 30px !important;
-            height: 30px !important;
-            border-width: 4px !important; 
-            border-color: rgba(255, 255, 255, 0.9) !important;
-            transition: border-color 0.15s ease;
-        }
-        
-        .scan-error-border #qr-shaded-region > div {
-            border-color: #ef4444 !important;
-        }
-        
-        #camera-placeholder span, 
-        #camera-placeholder br {
-            display: none !important;
-        }
-
-        #camera-placeholder div[id*="status"], 
-        #camera-placeholder .html5-qrcode-element {
-            display: none !important;
-        }
-        
-        .counter-box { text-align: center; font-size: 16px; font-weight: 600; margin: 10px 0; color: #475569; }
-        .counter-box span { color: #0a4e8a; font-size: 22px; font-weight: 800; }
-        
-        .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; margin-top: 10px; border: 1px solid #e2e8f0; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        th { background-color: #f8fafc; color: #64748b; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-        tr:nth-child(even) { background-color: #fdfefe; }
-        
-        .last-scanned { background-color: #f0f7ff !important; font-weight: 700; color: #0a4e8a; border-left: 4px solid #0a4e8a; }
-
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
-        }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-box {
-            background: white; padding: 24px; border-radius: 12px; width: 85%; max-width: 340px;
-            text-align: center; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-        }
-        .modal-box p { font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 20px; }
-        .modal-buttons { display: flex; gap: 12px; }
-        .modal-buttons button { margin: 0; padding: 12px; font-size: 15px; }
-        .btn-modal-confirm { background-color: #ef4444; width: 50%; }
-        .btn-modal-cancel { background-color: #64748b; width: 50%; }
-    </style>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-</head>
-<body>
-    <div class="panel">
-        <div id="camera-placeholder"></div>
-        <button class="btn-scan" id="startScan">Iniciar Escáner</button>
-        <button class="btn-torch" id="toggleTorch">💡 Encender Linterna</button>
-        <button class="btn-csv" id="exportCSV">Exportar a CSV</button>
-        <button class="btn-clear" id="clearList">Limpiar Lote</button>
-    </div>
-    <div class="counter-box">Códigos Capturados: <span id="count">0</span></div>
-    <div class="table-container">
-        <table>
-            <thead><tr><th>EAN / Código</th><th>Hora Captura</th></tr></thead>
-            <tbody id="lista-codigos"><tr><td colspan="2" style="text-align: center; color: #94a3b8; padding: 20px;">Ningún código escaneado</td></tr></tbody>
-        </table>
-    </div>
-
-    <div class="modal-overlay" id="confirmModal">
-        <div class="modal-box">
-            <p>¿Vaciar lote?</p>
-            <div class="modal-buttons">
-                <button class="btn-modal-cancel" id="btnCancel">Cancelar</button>
-                <button class="btn-modal-confirm" id="btnConfirm">Vaciar</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
+﻿    <script>
         let codigosGuardados = JSON.parse(localStorage.getItem('ean_lote_cache')) || [];
         let html5Qrcode = null;
         let ultimoCodigoEscaneado = null;
@@ -149,11 +10,11 @@
         document.getElementById('startScan').addEventListener('click', alternarEscaner);
         document.getElementById('toggleTorch').addEventListener('click', alternarLinterna);
         document.getElementById('exportCSV').addEventListener('click', exportarA_CSV);
+        document.getElementById('exportBAT').addEventListener('click', exportarA_BAT);
         document.getElementById('clearList').addEventListener('click', mostrarModalLimpiar);
         document.getElementById('btnCancel').addEventListener('click', ocultarModalLimpiar);
         document.getElementById('btnConfirm').addEventListener('click', ejecutarLimpieza);
 
-        // NUEVO: Escucha cualquier toque en la pantalla para activar el audio de forma segura sin bloquear botones
         window.addEventListener('click', inicializarAudio, { once: false });
         window.addEventListener('touchstart', inicializarAudio, { once: false });
 
@@ -172,16 +33,14 @@
 
         function emitirPitido() {
             try {
-                inicializarAudio(); // Asegura estado por si acaso
+                inicializarAudio(); 
                 if (!audioCtx) return;
-                
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
                 oscillator.type = 'sine';
                 oscillator.frequency.value = 1000; 
-                
                 gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
                 oscillator.start(audioCtx.currentTime);
@@ -193,23 +52,18 @@
             try {
                 inicializarAudio();
                 if (!audioCtx) return;
-
                 const osc1 = audioCtx.createOscillator();
                 const osc2 = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
-                
                 osc1.connect(gainNode);
                 osc2.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
-                
                 osc1.type = 'sine';
                 osc2.type = 'sine';
                 osc1.frequency.value = 150; 
                 osc2.frequency.value = 155; 
-                
                 gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
                 gainNode.gain.linearRampToValueAtTime(0.00001, audioCtx.currentTime + 0.35);
-                
                 osc1.start(audioCtx.currentTime);
                 osc2.start(audioCtx.currentTime);
                 osc1.stop(audioCtx.currentTime + 0.35);
@@ -217,11 +71,19 @@
             } catch (e) { console.error("Error de audio error:", e); }
         }
 
-        function esEanValido(codigo) {
-            if (!/^\d+$/.test(codigo)) return false; 
-            if (codigo.length !== 8 && codigo.length !== 13) return false;
+        // Validador inteligente que repara las lecturas truncadas por la cámara
+        function procesarYValidarCodigo(codigo) {
+            let str = codigo.trim();
+            if (!/^\d+$/.test(str)) return { valido: false };
 
-            const digitos = codigo.split('').map(Number);
+            // Si la cámara lee 12 dígitos, es un EAN-13 al que se le ha caído el cero inicial
+            if (str.length === 12) {
+                str = '0' + str;
+            }
+
+            if (str.length !== 8 && str.length !== 13) return { valido: false };
+
+            const digitos = str.split('').map(Number);
             const digitoControlOriginal = digitos.pop();
             
             digitos.reverse(); 
@@ -235,10 +97,13 @@
                 }
             }
 
-            const decenaSuperior = Math.ceil(suma / 10) * 10;
-            const digitoCalculado = decenaSuperior - suma;
+            const residuo = suma % 10;
+            const digitoCalculado = residuo === 0 ? 0 : 10 - residuo;
 
-            return digitoCalculado === digitoControlOriginal;
+            return {
+                valido: digitoCalculado === digitoControlOriginal,
+                codigoProcesado: str
+            };
         }
 
         function alternarEscaner() {
@@ -258,7 +123,7 @@
                 }
 
                 const config = { 
-                    fps: 20, 
+                    fps: 30, 
                     qrbox: function(width, height) {
                         return { width: Math.floor(width * 0.90), height: Math.floor(height * 0.35) }
                     },
@@ -273,7 +138,8 @@
                     },
                     formatsToSupport: [ 
                         Html5QrcodeSupportedFormats.EAN_13, 
-                        Html5QrcodeSupportedFormats.EAN_8 
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.UPC_A // Clave para forzar la lectura si se come el cero
                     ]
                 };
 
@@ -288,7 +154,6 @@
                     if (html5Qrcode.getRunningTrackCapabilities().torch) {
                         botonLinterna.style.display = 'block';
                     }
-
                     const feedbackRegion = document.getElementById('camera-placeholder');
                     if (feedbackRegion) {
                         const styleNode = document.createElement('style');
@@ -297,7 +162,7 @@
                     }
                 })
                 .catch(err => { 
-                    alert("Error/Permiso de cámara denegado: " + err); 
+                    console.error("Error de cámara:", err);
                     detenerCamara(); 
                 });
             }
@@ -317,8 +182,11 @@
         function onScanSuccess(decodedText) {
             if (escaneoBloqueado) return;
 
+            const resultado = procesarYValidarCodigo(decodedText);
+            const codigoFinal = resultado.codigoProcesado || decodedText;
+
             const ahora = Date.now();
-            const tiempoEspera = (decodedText === ultimoCodigoEscaneado) ? 1000 : 500;
+            const tiempoEspera = (codigoFinal === ultimoCodigoEscaneado) ? 1200 : 600;
 
             if (ahora - tiempoUltimoEscaneo < tiempoEspera) return;
 
@@ -327,21 +195,28 @@
 
             const placeholder = document.getElementById('camera-placeholder');
 
-            if (!esEanValido(decodedText)) {
+            if (!resultado.valido) {
                 emitirPitidoError();
                 placeholder.classList.add('scan-error-border'); 
-                if (navigator.vibrate) { navigator.vibrate([100, 50, 100]); }
+                
+                const canvasInterno = placeholder.querySelector('canvas');
+                if (canvasInterno) {
+                    const ctx = canvasInterno.getContext('2d');
+                    if (ctx) ctx.clearRect(0, 0, canvasInterno.width, canvasInterno.height);
+                }
+
+                if (navigator.vibrate) { navigator.vibrate([100, 60, 100]); }
 
                 setTimeout(() => {
                     placeholder.classList.remove('scan-error-border');
                     escaneoBloqueado = false;
                     if (html5Qrcode && html5Qrcode.isScanning) { html5Qrcode.resume(); }
-                }, 1200); 
+                }, 1000); 
                 
                 return;
             }
 
-            ultimoCodigoEscaneado = decodedText;
+            ultimoCodigoEscaneado = codigoFinal;
             tiempoUltimoEscaneo = ahora;
             
             emitirPitido();
@@ -350,7 +225,7 @@
             const ahoraFecha = new Date();
             const horaFormateada = ahoraFecha.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
             
-            codigosGuardados.unshift({ ean: decodedText, fecha: horaFormateada });
+            codigosGuardados.unshift({ ean: codigoFinal, fecha: horaFormateada });
             
             localStorage.setItem('ean_lote_cache', JSON.stringify(codigosGuardados));
             actualizarTabla();
@@ -394,7 +269,6 @@
                 tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; color: #94a3b8; padding: 20px;">Ningún código escaneado</td></tr>`;
                 return;
             }
-            
             tbody.innerHTML = "";
             codigosGuardados.forEach((item, index) => {
                 const claseResaltado = (index === 0) ? 'class="last-scanned"' : '';
@@ -404,10 +278,8 @@
 
         function exportarA_CSV() {
             if (codigosGuardados.length === 0) { alert("El lote está vacío."); return; }
-            
             let csvContent = "EAN,Hora de Captura\n";
             [...codigosGuardados].reverse().forEach(item => { csvContent += `"${item.ean}","${item.fecha}"\n`; });
-            
             const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -418,14 +290,340 @@
             document.body.removeChild(link);
         }
 
-        function mostrarModalLimpiar() {
-            document.getElementById('confirmModal').classList.add('active');
+        function exportarA_BAT() {
+            if (codigosGuardados.length === 0) { alert("El lote está vacío."); return; }
+            const cifrasSeparadasPorTab = [...codigosGuardados].reverse().map(item => item.ean).join("\t");
+            const batContent = `@echo off\nsetlocal\nset cifras=${cifrasSeparadasPorTab}\necho.\necho =======================================================\necho Pegando cifras en la ventana activa con Enter\necho =======================================================\necho.\necho Tienes 3 segundos para activar la ventana donde quieres pegar.\necho.\ntimeout /t 3 > NUL\nfor %%c in (%cifras%) do (\n    powershell -command "$wshell = New-Object -ComObject wscript.shell; $wshell.SendKeys('%%c'); $wshell.SendKeys('{ENTER}')"\n)\necho.\necho Proceso de pegado completado.\necho.\nendlocal\nexit`;
+            const blob = new Blob([batContent], { type: 'text/plain;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `autopegar_lote_${Date.now()}.bat`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
-        function ocultarModalLimpiar() {
-            document.getElementById('confirmModal').classList.remove('active');
+        function mostrarModalLimpiar() { document.getElementById('confirmModal').classList.add('active'); }
+        function ocultarModalLimpiar() { document.getElementById('confirmModal').classList.remove('active'); }
+        function ejecutarLimpieza() {
+            codigosGuardados = []; 
+            ultimoCodigoEscaneado = null; 
+            localStorage.removeItem('ean_lote_cache'); 
+            actualizarTabla(); 
+            ocultarModalLimpiar();
+        }
+    </script>
+</body>
+</html>
+    <script>
+        let codigosGuardados = JSON.parse(localStorage.getItem('ean_lote_cache')) || [];
+        let html5Qrcode = null;
+        let ultimoCodigoEscaneado = null;
+        let tiempoUltimoEscaneo = 0;
+        let audioCtx = null;
+        let linternaEncendida = false;
+        let escaneoBloqueado = false; 
+
+        document.getElementById('startScan').addEventListener('click', alternarEscaner);
+        document.getElementById('toggleTorch').addEventListener('click', alternarLinterna);
+        document.getElementById('exportCSV').addEventListener('click', exportarA_CSV);
+        document.getElementById('exportBAT').addEventListener('click', exportarA_BAT);
+        document.getElementById('clearList').addEventListener('click', mostrarModalLimpiar);
+        document.getElementById('btnCancel').addEventListener('click', ocultarModalLimpiar);
+        document.getElementById('btnConfirm').addEventListener('click', ejecutarLimpieza);
+
+        window.addEventListener('click', inicializarAudio, { once: false });
+        window.addEventListener('touchstart', inicializarAudio, { once: false });
+
+        actualizarTabla();
+
+        function inicializarAudio() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.error("Error al inicializar contexto de audio:", e); }
         }
 
+        function emitirPitido() {
+            try {
+                inicializarAudio(); 
+                if (!audioCtx) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 1000; 
+                gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.15);
+            } catch (e) { console.error("Error de audio:", e); }
+        }
+
+        function emitirPitidoError() {
+            try {
+                inicializarAudio();
+                if (!audioCtx) return;
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc1.type = 'sine';
+                osc2.type = 'sine';
+                osc1.frequency.value = 150; 
+                osc2.frequency.value = 155; 
+                gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.00001, audioCtx.currentTime + 0.35);
+                osc1.start(audioCtx.currentTime);
+                osc2.start(audioCtx.currentTime);
+                osc1.stop(audioCtx.currentTime + 0.35);
+                osc2.stop(audioCtx.currentTime + 0.35);
+            } catch (e) { console.error("Error de audio error:", e); }
+        }
+
+        // Validador inteligente que repara las lecturas truncadas por la cámara
+        function procesarYValidarCodigo(codigo) {
+            let str = codigo.trim();
+            if (!/^\d+$/.test(str)) return { valido: false };
+
+            // Si la cámara lee 12 dígitos, es un EAN-13 al que se le ha caído el cero inicial
+            if (str.length === 12) {
+                str = '0' + str;
+            }
+
+            if (str.length !== 8 && str.length !== 13) return { valido: false };
+
+            const digitos = str.split('').map(Number);
+            const digitoControlOriginal = digitos.pop();
+            
+            digitos.reverse(); 
+            
+            let suma = 0;
+            for (let i = 0; i < digitos.length; i++) {
+                if (i % 2 === 0) {
+                    suma += digitos[i] * 3;
+                } else {
+                    suma += digitos[i] * 1;
+                }
+            }
+
+            const residuo = suma % 10;
+            const digitoCalculado = residuo === 0 ? 0 : 10 - residuo;
+
+            return {
+                valido: digitoCalculado === digitoControlOriginal,
+                codigoProcesado: str
+            };
+        }
+
+        function alternarEscaner() {
+            const placeholder = document.getElementById('camera-placeholder');
+            const btn = document.getElementById('startScan');
+
+            if (html5Qrcode && html5Qrcode.isScanning) {
+                detenerCamara();
+            } else {
+                placeholder.style.display = 'block';
+                btn.innerText = "Detener Escáner";
+                btn.style.backgroundColor = "#f59e0b";
+                escaneoBloqueado = false;
+                
+                if (!html5Qrcode) {
+                    html5Qrcode = new Html5Qrcode("camera-placeholder");
+                }
+
+                const config = { 
+                    fps: 30, 
+                    qrbox: function(width, height) {
+                        return { width: Math.floor(width * 0.90), height: Math.floor(height * 0.35) }
+                    },
+                    videoConstraints: {
+                        facingMode: "environment",
+                        width: { min: 1280, ideal: 1920 },
+                        height: { min: 720, ideal: 1080 },
+                        focusMode: "continuous"
+                    },
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true 
+                    },
+                    formatsToSupport: [ 
+                        Html5QrcodeSupportedFormats.EAN_13, 
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.UPC_A // Clave para forzar la lectura si se come el cero
+                    ]
+                };
+
+                html5Qrcode.start(
+                    { facingMode: "environment" }, 
+                    config, 
+                    onScanSuccess,
+                    () => {} 
+                )
+                .then(() => {
+                    const botonLinterna = document.getElementById('toggleTorch');
+                    if (html5Qrcode.getRunningTrackCapabilities().torch) {
+                        botonLinterna.style.display = 'block';
+                    }
+                    const feedbackRegion = document.getElementById('camera-placeholder');
+                    if (feedbackRegion) {
+                        const styleNode = document.createElement('style');
+                        styleNode.innerHTML = `#camera-placeholder div[style*="font-size: font-size"], #camera-placeholder div[style*="text-align: center"] { display: none !important; }`;
+                        feedbackRegion.appendChild(styleNode);
+                    }
+                })
+                .catch(err => { 
+                    console.error("Error de cámara:", err);
+                    detenerCamara(); 
+                });
+            }
+        }
+
+        function alternarLinterna() {
+            if (html5Qrcode && html5Qrcode.isScanning) {
+                linternaEncendida = !linternaEncendida;
+                html5Qrcode.applyVideoConstraints({
+                    advanced: [{ torch: linternaEncendida }]
+                }).then(() => {
+                    document.getElementById('toggleTorch').innerText = linternaEncendida ? "❌ Apagar Linterna" : "💡 Encender Linterna";
+                }).catch(err => console.error("Error con la linterna:", err));
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            if (escaneoBloqueado) return;
+
+            const resultado = procesarYValidarCodigo(decodedText);
+            const codigoFinal = resultado.codigoProcesado || decodedText;
+
+            const ahora = Date.now();
+            const tiempoEspera = (codigoFinal === ultimoCodigoEscaneado) ? 1200 : 600;
+
+            if (ahora - tiempoUltimoEscaneo < tiempoEspera) return;
+
+            escaneoBloqueado = true;
+            if (html5Qrcode) { html5Qrcode.pause(); }
+
+            const placeholder = document.getElementById('camera-placeholder');
+
+            if (!resultado.valido) {
+                emitirPitidoError();
+                placeholder.classList.add('scan-error-border'); 
+                
+                const canvasInterno = placeholder.querySelector('canvas');
+                if (canvasInterno) {
+                    const ctx = canvasInterno.getContext('2d');
+                    if (ctx) ctx.clearRect(0, 0, canvasInterno.width, canvasInterno.height);
+                }
+
+                if (navigator.vibrate) { navigator.vibrate([100, 60, 100]); }
+
+                setTimeout(() => {
+                    placeholder.classList.remove('scan-error-border');
+                    escaneoBloqueado = false;
+                    if (html5Qrcode && html5Qrcode.isScanning) { html5Qrcode.resume(); }
+                }, 1000); 
+                
+                return;
+            }
+
+            ultimoCodigoEscaneado = codigoFinal;
+            tiempoUltimoEscaneo = ahora;
+            
+            emitirPitido();
+            if (navigator.vibrate) { navigator.vibrate(60); }
+
+            const ahoraFecha = new Date();
+            const horaFormateada = ahoraFecha.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            
+            codigosGuardados.unshift({ ean: codigoFinal, fecha: horaFormateada });
+            
+            localStorage.setItem('ean_lote_cache', JSON.stringify(codigosGuardados));
+            actualizarTabla();
+
+            setTimeout(() => {
+                escaneoBloqueado = false;
+                if (html5Qrcode && html5Qrcode.isScanning) {
+                    html5Qrcode.resume();
+                }
+            }, tiempoEspera);
+        }
+
+        function detenerCamara() {
+            const btn = document.getElementById('startScan');
+            const botonLinterna = document.getElementById('toggleTorch');
+            const placeholder = document.getElementById('camera-placeholder');
+            botonLinterna.style.display = 'none';
+            linternaEncendida = false;
+            escaneoBloqueado = false;
+            placeholder.classList.remove('scan-error-border');
+            botonLinterna.innerText = "💡 Encender Linterna";
+
+            if (html5Qrcode && html5Qrcode.isScanning) {
+                html5Qrcode.stop().then(() => { 
+                    placeholder.style.display = 'none'; 
+                    ultimoCodigoEscaneado = null; 
+                    btn.innerText = "Iniciar Escáner";
+                    btn.style.backgroundColor = "#10b981";
+                }).catch(err => console.error("Error al detener:", err));
+            } else { 
+                placeholder.style.display = 'none'; 
+                btn.innerText = "Iniciar Escáner";
+                btn.style.backgroundColor = "#10b981";
+            }
+        }
+
+        function actualizarTabla() {
+            const tbody = document.getElementById('lista-codigos');
+            document.getElementById('count').innerText = codigosGuardados.length;
+            if(codigosGuardados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; color: #94a3b8; padding: 20px;">Ningún código escaneado</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = "";
+            codigosGuardados.forEach((item, index) => {
+                const claseResaltado = (index === 0) ? 'class="last-scanned"' : '';
+                tbody.innerHTML += `<tr ${claseResaltado}><td>${item.ean}</td><td>${item.fecha}</td></tr>`;
+            });
+        }
+
+        function exportarA_CSV() {
+            if (codigosGuardados.length === 0) { alert("El lote está vacío."); return; }
+            let csvContent = "EAN,Hora de Captura\n";
+            [...codigosGuardados].reverse().forEach(item => { csvContent += `"${item.ean}","${item.fecha}"\n`; });
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `lote_inventario_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportarA_BAT() {
+            if (codigosGuardados.length === 0) { alert("El lote está vacío."); return; }
+            const cifrasSeparadasPorTab = [...codigosGuardados].reverse().map(item => item.ean).join("\t");
+            const batContent = `@echo off\nsetlocal\nset cifras=${cifrasSeparadasPorTab}\necho.\necho =======================================================\necho Pegando cifras en la ventana activa con Enter\necho =======================================================\necho.\necho Tienes 3 segundos para activar la ventana donde quieres pegar.\necho.\ntimeout /t 3 > NUL\nfor %%c in (%cifras%) do (\n    powershell -command "$wshell = New-Object -ComObject wscript.shell; $wshell.SendKeys('%%c'); $wshell.SendKeys('{ENTER}')"\n)\necho.\necho Proceso de pegado completado.\necho.\nendlocal\nexit`;
+            const blob = new Blob([batContent], { type: 'text/plain;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `autopegar_lote_${Date.now()}.bat`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function mostrarModalLimpiar() { document.getElementById('confirmModal').classList.add('active'); }
+        function ocultarModalLimpiar() { document.getElementById('confirmModal').classList.remove('active'); }
         function ejecutarLimpieza() {
             codigosGuardados = []; 
             ultimoCodigoEscaneado = null; 
